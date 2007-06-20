@@ -1,0 +1,6 @@
+
+You need to have libfuse >= 2.5 installed, plus perl for the build process,
+at least if you want to have a man page.
+
+Then, a simple make && make install should do.
+
