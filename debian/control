@@ -15,3 +15,7 @@ Description: Mount arbitrary files via FUSE as a tree of chunk files.
  .
  A possible use for this is space-efficient incremental backups of
  encrypted filesystem images using rsync's --link-dest option.
+ .
+ The package also contains UnChunkFs, which allows you to mount a
+ ChunkFS tree as an image file that mirrors the contents of whatever
+ file or device the ChunkFS tree was created from.

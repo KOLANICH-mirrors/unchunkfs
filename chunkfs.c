@@ -21,7 +21,6 @@
 #define _XOPEN_SOURCE 500
 #define FUSE_USE_VERSION 25
 
-#include <fuse.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include <string.h>
@@ -34,23 +33,12 @@
 #include <stdlib.h>
 #include <syslog.h>
 #include <stdbool.h>
-#include <stdarg.h>
 #include <sys/ioctl.h>
 #include <linux/fs.h>
 
-void die(bool,const char *,...) __attribute__ ((noreturn,format (printf,2,3)));
+#include <fuse.h>
 
-void die(bool syserr,const char *fmt,...){
-	va_list ap;
-	char buf[1024];
-
-	va_start(ap,fmt);
-	vsnprintf(buf,sizeof(buf),fmt,ap);
-	buf[sizeof(buf)-1]=0;
-	if(syserr)syslog(LOG_ERR,"%s: %m, exiting",buf);
-		else syslog(LOG_ERR,"%s, exiting",buf);
-	exit(1);
-}
+#include "utils.h"
 
 struct chunk_stat {
 	int level;
@@ -58,10 +46,8 @@ struct chunk_stat {
 	off_t chunk,offset,size;
 };
 
-int image_fd;
-off_t chunk_size,image_size,image_chunks;
-
-#define min(a,b) (((a)<(b))?(a):(b))
+static int image_fd;
+static off_t chunk_size,image_size,image_chunks;
 
 #define cons_hexdig(a,b,c) { 		\
 	uint64_t t;			\
@@ -75,7 +61,7 @@ off_t chunk_size,image_size,image_chunks;
 	a|=t<<(b);			\
 }
 
-int resolve_path(const char *path,struct chunk_stat *st){
+static int resolve_path(const char *path,struct chunk_stat *st){
 	size_t l;
 	uint64_t r;
 
@@ -103,7 +89,7 @@ int resolve_path(const char *path,struct chunk_stat *st){
 	return 0;
 }
 
-int chunkfs_getattr(const char *path,struct stat *buf){
+static int chunkfs_getattr(const char *path,struct stat *buf){
 	int r;
 	struct chunk_stat st;
 
@@ -125,7 +111,7 @@ int chunkfs_getattr(const char *path,struct stat *buf){
 	return 0;
 }
 
-int chunkfs_readdir(const char *path,void *buf,fuse_fill_dir_t filler,off_t offset,struct fuse_file_info *fi){
+static int chunkfs_readdir(const char *path,void *buf,fuse_fill_dir_t filler,off_t offset,struct fuse_file_info *fi){
 	int r;
 	struct chunk_stat st;
 	uint64_t chunks_per_entry;
@@ -143,7 +129,7 @@ int chunkfs_readdir(const char *path,void *buf,fuse_fill_dir_t filler,off_t offs
 	return 0;
 }
 
-int chunkfs_open(const char *path,struct fuse_file_info *fi){
+static int chunkfs_open(const char *path,struct fuse_file_info *fi){
 	int r;
 	struct chunk_stat st;
 
@@ -152,20 +138,25 @@ int chunkfs_open(const char *path,struct fuse_file_info *fi){
 	return 0;
 }
 
-int chunkfs_read(const char *path,char *buf,size_t count,off_t offset,struct fuse_file_info *fi){
+static int chunkfs_read(const char *path,char *buf,size_t count,off_t offset,struct fuse_file_info *fi){
 	int r;
 	struct chunk_stat st;
-	size_t r2;
+	size_t bufpos,r2;
 
 	if((r=resolve_path(path,&st))<0)return r;
 	if(S_ISDIR(st.mode))return -EISDIR;
-	if(offset>st.size)return 0;
-	count=min(st.size-offset,count);
-	r2=pread(image_fd,buf,count,st.offset+offset);
-	return r2<0?-errno:r2;
+	if(count>INT_MAX)die(false,"read request larger than can be represented in an int");
+	if(count>SSIZE_MAX)die(false,"read request larger than can be represented in an ssize_t");
+	count=min((off_t)count,max(st.size-offset,(off_t)0));
+	for(bufpos=0;bufpos<count;){
+		if((r2=pread(image_fd,buf+bufpos,count-bufpos,st.offset+offset+(off_t)bufpos))<0)return -errno;
+		if(!r2)return -EIO;
+		bufpos+=r2;
+	}
+	return bufpos;
 }
 
-struct fuse_operations chunkfs_ops={
+static struct fuse_operations chunkfs_ops={
 	.getattr=chunkfs_getattr,
 	.readdir=chunkfs_readdir,
 	.open=chunkfs_open,

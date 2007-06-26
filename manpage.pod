@@ -7,6 +7,8 @@ chunkfs - mount arbitrary files via FUSE as a tree of chunk files
 
 B<chunkfs> { B<-h> | <I<chunk size>> <I<image file>> <I<mount point>> }
 
+B<unchunkfs> { B<-h> | <I<chunk dir>> <I<mount point>> }
+
 =head1 DESCRIPTION
 
 ChunkFS allows you to mount an arbitrary file or block device as a directory
@@ -18,20 +20,24 @@ filesystem images using rsync's --link-dest option. That way you can create
 incremental backups from the ChunkFS-mounted image where any chunk that hasn't
 changed since the last backup will be a hard link to the corresponding chunk
 from the previous backup. In order to restore a revision, you simply have to
-concatenate all the chunks from the backup.
+concatenate all the chunks from the backup. Or you could use UnCunkFS to mount
+a ChunkFS tree (or a copy of one) as an image file.
 
 <I<chunk size>> is the size of the chunks into which <I<image file>> is to be
 divided when mounted at <I<mount point>>, specified in bytes. If the mounted
 file's size is not a multiple of the <I<chunk size>>, the last file in the tree
 simply will be smaller than the chunk size.
 
-The chunk files are always at the eightth level of the mounted directory tree,
-if there are any (that is: if the image file is at least one byte in size).
-The concatenation of the path components from the root of the filesystem to a
-file gives you the hexadecimal representation of the number of the chunk that
-can be found in that respective file. This layout allows you to even
-incrementally backup files that have changed in size, as long as you do mount
-the ChunkFS with the same chunk size.
+In case of UnChunkFS, <I<chunk dir>> is the directory that contains a ChunkFS
+tree (or a copy of one) that is to be mounted at <I<mount point>>.
+
+The chunk files of a ChunkFS are always at the eightth level of the mounted
+directory tree, if there are any (that is: if the image file is at least one
+byte in size). The concatenation of the path components from the root of the
+filesystem to a file gives you the hexadecimal representation of the number
+of the chunk that can be found in that respective file. This layout allows
+you to even incrementally backup files that have changed in size, as long
+as you do mount the ChunkFS with the same chunk size.
 
 Note, however, that ChunkFS does not cope well with image files that change
 their size while they are mounted. It shouldn't crash, but you will not be able
@@ -39,13 +45,18 @@ to access any newly-allocated space and you will immediately hit end of file,
 or maybe even get other errors, if you try to read from a chunk file for which
 there is no data in the image file anymore.
 
-The permissions of the files within the filesystem are derived from the
+With UnChunkFS, you will always have exactly one file below the mount point,
+named B<image>.
+
+The permissions of the files within the ChunkFS are derived from the
 permissions of the image file. Owner and group are simply inherited.
 The mode of all objects is the same as that of the image file, except that
 any executable bits are cleared for files, while directories have their
 executable bits set for exactly those entities (owner, group, others)
-that also have read permission. But see below for what these permissions
-actually effect.
+that also have read permission. In the same way, UnChunkFS derives
+ownership and permissions for its root directory and the image file
+from the root of the mounted ChunkFS tree. But see below for what all
+these permissions actually effect.
 
 =head1 OPTIONS
 
@@ -69,6 +80,11 @@ mount.
 
 This gives you 1 MiB chunks of supersecretcryptoimage mounted below
 forbackup.
+
+	unchunkfs forbackup forrestore
+	mount -o loop forrestore/image gimmebackmydata
+
+When it's time for a restore.
 
 	chunkfs 1 /dev/hda myharddiskinpieces
 
