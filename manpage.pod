@@ -91,6 +91,18 @@ When it's time for a restore.
 You always wanted to examine every byte on your hard disk individually,
 right?
 
+If you want to use (Un)ChunkFS with block device snapshots, you
+might anticipate the problem that the snapshot of a journalling filesystem
+usually will need a log replay before it can be mounted--but you can't
+do any log replay on a read-only image like that provided by UnChunkFS,
+of course. As a possible solution, there is a B<writeoverlay.sh> script
+included in this package's documentation directory that allows you to
+create from an arbitrary read-only block device a writeable one by the
+means of the Linux device mapper's snapshot facility. Any writes to that
+device will be redirected to a temporary file. Make sure you read at the
+very least the comments within the script before you use it, as I
+wouldn't consider it production quality.
+
 =head1 COPYRIGHT
 
 Copyright (C) 2007  Florian Zumbiehl <florz@florz.de>

@@ -1,3 +1,9 @@
+chunkfs (0.3) unstable; urgency=low
+
+  * Added writeoverlay.sh
+
+ -- Florian Zumbiehl <florz@florz.de>  Thu,  5 Jul 2007 03:48:03 +0200
+
 chunkfs (0.2) unstable; urgency=low
 
   * Added UnChunkFS
