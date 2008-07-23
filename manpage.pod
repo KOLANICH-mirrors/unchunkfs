@@ -97,7 +97,7 @@ usually will need a log replay before it can be mounted--but you can't
 do any log replay on a read-only image like that provided by UnChunkFS,
 of course. As a possible solution, there is a B<writeoverlay.sh> script
 included in this package's documentation directory that allows you to
-create from an arbitrary read-only block device a writeable one by the
+create from an arbitrary read-only block device a writable one by the
 means of the Linux device mapper's snapshot facility. Any writes to that
 device will be redirected to a temporary file. Make sure you read at the
 very least the comments within the script before you use it, as I

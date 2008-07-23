@@ -141,7 +141,7 @@ static int chunkfs_open(const char *path,struct fuse_file_info *fi){
 static int chunkfs_read(const char *path,char *buf,size_t count,off_t offset,struct fuse_file_info *fi){
 	int r;
 	struct chunk_stat st;
-	size_t bufpos,r2;
+	ssize_t bufpos,r2;
 
 	if((r=resolve_path(path,&st))<0)return r;
 	if(S_ISDIR(st.mode))return -EISDIR;

@@ -1,7 +1,7 @@
 
 PREFIX?=/usr/local
 
-VERSION=0.2
+VERSION=0.4
 
 CFLAGS=-std=c99 -O2 -Wall
 LDFLAGS=-lfuse

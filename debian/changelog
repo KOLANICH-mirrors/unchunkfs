@@ -1,3 +1,10 @@
+chunkfs (0.4) unstable; urgency=low
+
+  * fixed read errors being ignored because of size_t being used where
+    ssize_t should be
+
+ -- Florian Zumbiehl <florz@florz.de>  Wed, 23 Jul 2008 10:18:36 +0200
+
 chunkfs (0.3) unstable; urgency=low
 
   * Added writeoverlay.sh

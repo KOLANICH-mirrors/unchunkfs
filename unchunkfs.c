@@ -119,7 +119,7 @@ static int unchunkfs_read(const char *path,char *buf,size_t count,off_t offset,s
 	mode_t mode;
 	off_t chunk_num,chunk_offset;
 	char chunk_name[24];
-	size_t bufpos,r2;
+	ssize_t bufpos,r2;
 
 	if(ensure_chunkdir_is_cwd()<0)return -EIO;
 	if((r=resolve_path(path,&mode))<0)return r;
