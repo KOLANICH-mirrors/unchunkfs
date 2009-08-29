@@ -1,6 +1,6 @@
 /*
  *  ChunkFS - mount arbitrary files via FUSE as a tree of chunk files
- *  Copyright (C) 2007  Florian Zumbiehl <florz@florz.de>
+ *  Copyright (C) 2007-2009  Florian Zumbiehl <florz@florz.de>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -42,7 +42,7 @@
 static int chunkdir_fd;
 static off_t chunk_size,image_size;
 
-static int ensure_chunkdir_is_cwd(){
+static int ensure_chunkdir_is_cwd(void){
 	static bool done;
 
 	if(!done){
@@ -148,48 +148,80 @@ static struct fuse_operations unchunkfs_ops={
 };
 
 int main(int argc,char **argv){
-	char opt;
-	char *helpargv[2]={NULL,"-h"};
+	bool validation_error=false,show_version=false,show_help=false;
+	int opt,ret=0;
+	char *fake_argv[2]={"",NULL};
 	int cwd_fd;
 	struct stat st;
 	off_t last_chunk,last_chunk_size;
 
 	openlog("unchunkfs",LOG_CONS|LOG_NDELAY|LOG_PERROR|LOG_PID,LOG_DAEMON);
-	opterr=0;
-	while((opt=getopt(argc,argv,"ho:"))!=-1)
-		if(opt=='h'){
-			helpargv[0]=argv[0];
-			return fuse_main(2,helpargv,NULL);
+	while((opt=getopt(argc,argv,":hVdfso:"))!=-1)
+		switch(opt){
+			case 'h':
+				show_help=true;
+				break;
+			case 'V':
+				show_version=true;
+				break;
+			case '?':
+				fprintf(stderr,"unchunkfs: invalid option: -%c\n",optopt);
+				validation_error=true;
+				break;
+			case ':':
+				fprintf(stderr,"unchunkfs: option requires an argument: -%c\n",optopt);
+				validation_error=true;
+				break;
 		}
-	if(argc-optind!=2)die(false,"Usage: %s [options] <chunk dir> <mount point>",*argv);
-	if((cwd_fd=open(".",O_RDONLY))<0)die(true,"open(.)");
-	if((chunkdir_fd=open(argv[optind],O_RDONLY))<0)die(true,"open(<chunk dir>)");
-	if(fchdir(chunkdir_fd)<0)die(true,"fchdir(<chunk dir>)");
-	last_chunk=0;
-	last_chunk_size=0;
-	for(int x=64;x--;){
-		off_t new_last_chunk;
-		char chunk_name[24];
+	if(show_help+show_version>1||argc-optind!=(show_help||show_version?0:2))validation_error=true;
+	if(validation_error||show_help){
+		fprintf(stderr,
+			"Usage: %s [options] <chunk dir> <mount point>\n"
+			"\n"
+			"general options:\n"
+			"    -o opt[,opt...]        mount options\n"
+			"    -h                     print help\n"
+			"    -V                     print version\n"
+			"\n",
+			*argv);
+		fake_argv[1]="-ho";
+		fuse_main(2,fake_argv,&unchunkfs_ops);
+		ret=validation_error;
+	}else if(show_version){
+		fprintf(stderr,"UnChunkFS v" VERSION "\n");
+		fake_argv[1]="-V";
+		fuse_main(2,fake_argv,&unchunkfs_ops);
+	}else{
+		if((cwd_fd=open(".",O_RDONLY))<0)die(true,"open(.)");
+		if((chunkdir_fd=open(argv[optind],O_RDONLY))<0)die(true,"open(<chunk dir>)");
+		if(fchdir(chunkdir_fd)<0)die(true,"fchdir(<chunk dir>)");
+		last_chunk=0;
+		last_chunk_size=0;
+		for(int x=64;x--;){
+			off_t new_last_chunk;
+			char chunk_name[24];
 
-		new_last_chunk=last_chunk|(x<63?(off_t)1<<x:0);
-		gen_chunk_name(chunk_name,new_last_chunk);
-		if(stat(chunk_name,&st)<0){
-			if(errno!=ENOENT)die(true,"stat(<chunk dir>/%s)",chunk_name);
-		}else{
-			if(st.st_size<1)die(false,"<chunk dir>/%s is smaller than one byte",chunk_name);
-			if(!chunk_size)chunk_size=st.st_size;
-			last_chunk=new_last_chunk;
-			last_chunk_size=st.st_size;
+			new_last_chunk=last_chunk|(x<63?(off_t)1<<x:0);
+			gen_chunk_name(chunk_name,new_last_chunk);
+			if(stat(chunk_name,&st)<0){
+				if(errno!=ENOENT)die(true,"stat(<chunk dir>/%s)",chunk_name);
+			}else{
+				if(st.st_size<1)die(false,"<chunk dir>/%s is smaller than one byte",chunk_name);
+				if(!chunk_size)chunk_size=st.st_size;
+				last_chunk=new_last_chunk;
+				last_chunk_size=st.st_size;
+			}
 		}
+		if(chunk_size<1)chunk_size=1;
+		if(last_chunk>ANYSINT_MAX(off_t)/chunk_size)die(false,"the sum of the chunks is too large");
+		image_size=last_chunk*chunk_size;
+		if(last_chunk_size>ANYSINT_MAX(off_t)-image_size)die(false,"the sum of the chunks is too large");
+		image_size+=last_chunk_size;
+		argv[optind]=argv[optind+1];
+		argc--;
+		if(fchdir(cwd_fd)<0)die(true,"fchdir(<start cwd>)");
+		ret=fuse_main(argc,argv,&unchunkfs_ops);
 	}
-	if(chunk_size<1)chunk_size=1;
-	if(last_chunk>ANYSINT_MAX(off_t)/chunk_size)die(false,"the sum of the chunks is too large");
-	image_size=last_chunk*chunk_size;
-	if(last_chunk_size>ANYSINT_MAX(off_t)-image_size)die(false,"the sum of the chunks is too large");
-	image_size+=last_chunk_size;
-	argv[optind]=argv[optind+1];
-	argc--;
-	if(fchdir(cwd_fd)<0)die(true,"fchdir(<start cwd>)");
-	return fuse_main(argc,argv,&unchunkfs_ops);
+	return ret;
 }
 

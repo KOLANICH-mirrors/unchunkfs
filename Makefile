@@ -1,10 +1,10 @@
 
 PREFIX?=/usr/local
 
-VERSION=0.4
+VERSION=0.5
 
-CFLAGS=-std=c99 -O2 -Wall
-LDFLAGS=-lfuse
+CFLAGS=-std=c99 -DVERSION='"$(VERSION)"' -O2 -Wall
+LDFLAGS=-s -lfuse
 
 all: chunkfs unchunkfs chunkfs.1.gz
 

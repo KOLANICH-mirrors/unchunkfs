@@ -1,3 +1,11 @@
+chunkfs (0.5) unstable; urgency=low
+
+  * Mostly style improvements, in particular more useful help output
+  * writeoverlay.sh now uses new losetup option -s to avoid race
+    condition in device allocation
+
+ -- Florian Zumbiehl <florz@florz.de>  Sat, 29 Aug 2009 02:11:08 +0200
+
 chunkfs (0.4) unstable; urgency=low
 
   * fixed read errors being ignored because of size_t being used where

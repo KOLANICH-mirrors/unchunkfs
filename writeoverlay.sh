@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Copyright (C) 2007  Florian Zumbiehl <florz@florz.de>
+# Copyright (C) 2007-2009  Florian Zumbiehl <florz@florz.de>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -51,9 +51,8 @@ case "$1" in
 		SECT_PER_CHUNK=$4
 		OVERLAYDEV=$5
 		COWFILE=`mktemp -t writeoverlay.XXXXXXXXXX`
-		dd if=/dev/zero bs=1 seek=$COWSIZE count=1 of=$COWFILE > /dev/null
-		LOOPDEV=`losetup -f`
-		losetup $LOOPDEV $COWFILE
+		dd if=/dev/zero bs=1 seek=`echo $COWSIZE-1 | bc` count=1 of=$COWFILE > /dev/null
+		LOOPDEV=`losetup -fs $COWFILE`
 		rm $COWFILE
 		echo "0 `blockdev --getsz $ORIGDEV` snapshot $ORIGDEV $LOOPDEV n $SECT_PER_CHUNK" | dmsetup create $OVERLAYDEV
 		;;

@@ -1,6 +1,6 @@
 /*
  *  ChunkFS - mount arbitrary files via FUSE as a tree of chunk files
- *  Copyright (C) 2007  Florian Zumbiehl <florz@florz.de>
+ *  Copyright (C) 2007-2009  Florian Zumbiehl <florz@florz.de>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -49,31 +49,28 @@ struct chunk_stat {
 static int image_fd;
 static off_t chunk_size,image_size,image_chunks;
 
-#define cons_hexdig(a,b,c) { 		\
-	uint64_t t;			\
-	if((c)>='0'&&(c)<='9'){		\
-		t=(c)-'0';		\
-	}else if((c)>='a'&&(c)<='f'){	\
-		t=(c)-'a'+10;		\
-	}else{				\
-		return -ENOENT;		\
-	}				\
-	a|=t<<(b);			\
-}
-
 static int resolve_path(const char *path,struct chunk_stat *st){
 	size_t l;
 	uint64_t r;
+	uint8_t tmp;
 
 	l=strlen(path);
 	r=0;
 	if(l<3||l>8*3||l%3){
 		if(strcmp(path,"/"))return -ENOENT;
 	}else{
-		for(int x=0;x<l/3;x++){
-			if(path[x*3]!='/')return -ENOENT;
-			cons_hexdig(r,(8-x)*8-4,path[x*3+1]);
-			cons_hexdig(r,(8-x)*8-8,path[x*3+2]);
+		for(int x=0;x<l;x++){
+			tmp=path[x];
+			if(x%3){
+				if(tmp>='0'&&tmp<='9'){
+					tmp-='0';
+				}else if(tmp>='a'&&tmp<='f'){
+					tmp-='a'-10;
+				}else{
+					return -ENOENT;
+				}
+				r|=((uint64_t)tmp)<<((8*2-x/3*2-x%3)*4);
+			}else if(tmp!='/')return -ENOENT;
 		}
 		if(r>=(uint64_t)image_chunks)return -ENOENT;
 	}
@@ -164,35 +161,68 @@ static struct fuse_operations chunkfs_ops={
 };
 
 int main(int argc,char **argv){
+	bool validation_error=false,show_version=false,show_help=false;
+	int opt,ret=0;
+	char *fake_argv[2]={"",NULL};
+	char *end;
 	struct stat st;
-	char opt,*end;
-	char *helpargv[2]={NULL,"-h"};
 
 	openlog("chunkfs",LOG_CONS|LOG_NDELAY|LOG_PERROR|LOG_PID,LOG_DAEMON);
-	opterr=0;
-	while((opt=getopt(argc,argv,"ho:"))!=-1)
-		if(opt=='h'){
-			helpargv[0]=argv[0];
-			return fuse_main(2,helpargv,NULL);
+	while((opt=getopt(argc,argv,":hVdfso:"))!=-1)
+		switch(opt){
+			case 'h':
+				show_help=true;
+				break;
+			case 'V':
+				show_version=true;
+				break;
+			case '?':
+				fprintf(stderr,"chunkfs: invalid option: -%c\n",optopt);
+				validation_error=true;
+				break;
+			case ':':
+				fprintf(stderr,"chunkfs: option requires an argument: -%c\n",optopt);
+				validation_error=true;
+				break;
 		}
-	if(argc-optind!=3)die(false,"Usage: %s [options] <chunk size> <image file> <mount point>",*argv);
-	errno=0;
-	chunk_size=strtoll(argv[optind],&end,10);
-	if(errno||*end||chunk_size<1)die(false,"Specified invalid chunk size");
-	if((image_fd=open(argv[optind+1],O_RDONLY))<0)die(true,"open(image)");
-	if(fstat(image_fd,&st)<0)die(true,"stat(image)");
-	if(S_ISBLK(st.st_mode)){
-		uint64_t blksize;
-		if(ioctl(image_fd,BLKGETSIZE64,&blksize)<0)die(true,"ioctl(image,BLKGETSIZE64)");
-		if(blksize>(uint64_t)INT64_MAX)die(false,"block device too large");
-		image_size=blksize;
+	if(show_help+show_version>1||argc-optind!=(show_help||show_version?0:3))validation_error=true;
+	if(validation_error||show_help){
+		fprintf(stderr,
+			"Usage: %s [options] <chunk size> <image file> <mount point>\n"
+			"\n"
+			"general options:\n"
+			"    -o opt[,opt...]        mount options\n"
+			"    -h                     print help\n"
+			"    -V                     print version\n"
+			"\n",
+			*argv);
+		fake_argv[1]="-ho";
+		fuse_main(2,fake_argv,&chunkfs_ops);
+		ret=validation_error;
+	}else if(show_version){
+		fprintf(stderr,"ChunkFS v" VERSION "\n");
+		fake_argv[1]="-V";
+		fuse_main(2,fake_argv,&chunkfs_ops);
 	}else{
-		image_size=st.st_size;
+		errno=0;
+		chunk_size=strtoll(argv[optind],&end,10);
+		if(errno||*end||chunk_size<1)die(false,"Specified invalid chunk size");
+		if((image_fd=open(argv[optind+1],O_RDONLY))<0)die(true,"open(image)");
+		if(fstat(image_fd,&st)<0)die(true,"stat(image)");
+		if(S_ISBLK(st.st_mode)){
+			uint64_t blksize;
+			if(ioctl(image_fd,BLKGETSIZE64,&blksize)<0)die(true,"ioctl(image,BLKGETSIZE64)");
+			if(blksize>(uint64_t)INT64_MAX)die(false,"block device too large");
+			image_size=blksize;
+		}else{
+			image_size=st.st_size;
+		}
+		image_chunks=image_size/chunk_size;
+		if(image_size%chunk_size)image_chunks++;
+		argv[optind]=argv[optind+2];
+		argc-=2;
+		ret=fuse_main(argc,argv,&chunkfs_ops);
 	}
-	image_chunks=image_size/chunk_size;
-	if(image_size%chunk_size)image_chunks++;
-	argv[optind]=argv[optind+2];
-	argc-=2;
-	return fuse_main(argc,argv,&chunkfs_ops);
+	return ret;
 }
 

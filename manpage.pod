@@ -5,9 +5,9 @@ chunkfs - mount arbitrary files via FUSE as a tree of chunk files
 
 =head1 SYNOPSIS
 
-B<chunkfs> { B<-h> | <I<chunk size>> <I<image file>> <I<mount point>> }
+B<chunkfs> { B<-h> | B<-V> | <I<chunk size>> <I<image file>> <I<mount point>> }
 
-B<unchunkfs> { B<-h> | <I<chunk dir>> <I<mount point>> }
+B<unchunkfs> { B<-h> | B<-V> | <I<chunk dir>> <I<mount point>> }
 
 =head1 DESCRIPTION
 
@@ -60,17 +60,27 @@ these permissions actually effect.
 
 =head1 OPTIONS
 
-Actually, there are quite a few options provided by the FUSE
+=over
+
+=item B<-h>
+
+Displays a short usage summary and all the options provided by the
+FUSE library.
+
+=item B<-V>
+
+Prints the program version. 
+
+=back
+
+In addition to the options described above, there are quite a few options provided by the FUSE
 library. For most of those, I don't even know what they do and there doesn't
 seem to be any documentation. If you run chunkfs with the B<-h> option,
-you will get a list of those options. Don't get confused by the fact
-that the FUSE library also tells you a synopsis that contradicts what's
-stated in this man page--I simply don't know how to stop libfuse from
-telling you that nonsense.
+you will get a list of those options.
 
 Note that, by default, the permissions described above are used for
 presentation only, not for actual permission checking. You might
-want to use B<­o default_permissions> to change that, and maybe
+want to use B<-o default_permissions> to change that, and maybe
 B<-o allow_other> to actually allow others to access your ChunkFS
 mount.
 
@@ -92,7 +102,7 @@ You always wanted to examine every byte on your hard disk individually,
 right?
 
 If you want to use (Un)ChunkFS with block device snapshots, you
-might anticipate the problem that the snapshot of a journalling filesystem
+might anticipate the problem that the snapshot of a journaling filesystem
 usually will need a log replay before it can be mounted--but you can't
 do any log replay on a read-only image like that provided by UnChunkFS,
 of course. As a possible solution, there is a B<writeoverlay.sh> script
@@ -103,9 +113,15 @@ device will be redirected to a temporary file. Make sure you read at the
 very least the comments within the script before you use it, as I
 wouldn't consider it production quality.
 
+=head1 SEE ALSO
+
+chunksync(1)
+
+http://chunkfs.florz.de/
+
 =head1 COPYRIGHT
 
-Copyright (C) 2007  Florian Zumbiehl <florz@florz.de>
+Copyright (C) 2007-2009  Florian Zumbiehl <florz@florz.de>
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
