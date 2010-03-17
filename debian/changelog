@@ -1,3 +1,10 @@
+chunkfs (0.6) unstable; urgency=low
+
+  * Fix potential filedescriptor leak in unchunkfs_read() in case of
+    pread() errors.
+
+ -- Florian Zumbiehl <florz@florz.de>  Wed, 17 Mar 2010 21:02:55 +0100
+
 chunkfs (0.5) unstable; urgency=low
 
   * Mostly style improvements, in particular more useful help output

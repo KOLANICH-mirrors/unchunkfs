@@ -1,6 +1,6 @@
 /*
  *  ChunkFS - mount arbitrary files via FUSE as a tree of chunk files
- *  Copyright (C) 2007-2009  Florian Zumbiehl <florz@florz.de>
+ *  Copyright (C) 2007-2010  Florian Zumbiehl <florz@florz.de>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -132,10 +132,9 @@ static int unchunkfs_read(const char *path,char *buf,size_t count,off_t offset,s
 		chunk_offset=(offset+(off_t)bufpos)%chunk_size;
 		gen_chunk_name(chunk_name,chunk_num);
 		if((chunk_fd=open(chunk_name,O_RDONLY))<0)return -EIO;
-		if((r2=pread(chunk_fd,buf+bufpos,count-bufpos,chunk_offset))<0)return -errno;
-		if(!r2)return -EIO;
-		bufpos+=r2;
+		if((r2=pread(chunk_fd,buf+bufpos,count-bufpos,chunk_offset))>0)bufpos+=r2;
 		if(close(chunk_fd)<0)die(true,"close(chunk_fd)");
+		if(r2<=0)return -(r2?errno:EIO);
 	}
 	return bufpos;
 }

@@ -1,6 +1,6 @@
 /*
  *  ChunkFS - mount arbitrary files via FUSE as a tree of chunk files
- *  Copyright (C) 2007-2009  Florian Zumbiehl <florz@florz.de>
+ *  Copyright (C) 2007-2010  Florian Zumbiehl <florz@florz.de>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
