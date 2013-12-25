@@ -1,3 +1,10 @@
+chunkfs (0.7) unstable; urgency=low
+
+  * Check that file descriptors 0 to 2 are open on startup.
+  * Change Debian dependency from deprecated fuse-utils to fuse.
+
+ -- Florian Zumbiehl <florz@florz.de>  Wed, 25 Dec 2013 17:43:35 +0100
+
 chunkfs (0.6) unstable; urgency=low
 
   * Fix potential filedescriptor leak in unchunkfs_read() in case of

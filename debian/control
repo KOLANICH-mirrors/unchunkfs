@@ -7,7 +7,7 @@ Standards-Version: 3.7.2
 
 Package: chunkfs
 Architecture: any
-Depends: ${shlibs:Depends}, fuse-utils
+Depends: ${shlibs:Depends}, fuse
 Description: Mount arbitrary files via FUSE as a tree of chunk files.
  ChunkFS allows you to mount an arbitrary file or block device as a directory
  tree of read-only files that each represent a chunk of user-specified size
