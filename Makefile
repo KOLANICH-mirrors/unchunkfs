@@ -12,8 +12,8 @@ all: chunkfs unchunkfs chunkfs.1.gz
 install:
 	install chunkfs ${DESTDIR}${PREFIX}/bin/
 	install unchunkfs ${DESTDIR}${PREFIX}/bin/
-	install -d ${DESTDIR}${PREFIX}/share/doc/chunkfs/examples/
-	install writeoverlay.sh ${DESTDIR}${PREFIX}/share/doc/chunkfs/examples/
+	install -d ${DESTDIR}${PREFIX}/share/doc/packages/chunkfs/examples/
+	install writeoverlay.sh ${DESTDIR}${PREFIX}/share/doc/packages/chunkfs/examples/
 	install -m 644 chunkfs.1.gz ${DESTDIR}${PREFIX}/share/man/man1/
 	ln -s chunkfs.1.gz ${DESTDIR}${PREFIX}/share/man/man1/unchunkfs.1.gz
 
