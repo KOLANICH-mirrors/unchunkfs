@@ -1,13 +1,13 @@
 Source: chunkfs
 Section: unknown
-Priority: extra
+Priority: optional
 Maintainer: Florian Zumbiehl <florz@florz.de>
-Build-Depends: debhelper (>= 5), libfuse-dev (>= 2.5), perl
-Standards-Version: 3.7.2
+Build-Depends: debhelper (>= 9), libfuse-dev (>= 2.5), perl:any
+Standards-Version: 3.9.8
 
 Package: chunkfs
 Architecture: any
-Depends: ${shlibs:Depends}, fuse
+Depends: ${shlibs:Depends}, ${misc:Depends}, fuse
 Description: Mount arbitrary files via FUSE as a tree of chunk files.
  ChunkFS allows you to mount an arbitrary file or block device as a directory
  tree of read-only files that each represent a chunk of user-specified size

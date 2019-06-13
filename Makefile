@@ -1,7 +1,7 @@
 
 PREFIX?=/usr/local
 
-VERSION=0.7
+VERSION=0.8
 
 CFLAGS=-std=c99 -DVERSION='"$(VERSION)"' -O2 -Wall
 LDFLAGS=-s -lfuse

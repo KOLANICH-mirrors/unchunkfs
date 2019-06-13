@@ -28,6 +28,7 @@
 #include <stdio.h>
 #include <limits.h>
 #include <stdint.h>
+#include <inttypes.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <syslog.h>
@@ -64,7 +65,7 @@ static int resolve_path(const char *path,mode_t *mode){
 }
 
 static void gen_chunk_name(char *buf,off_t num){
-	sprintf(buf+7,"%016llx",num);
+	sprintf(buf+7,"%016" PRIxMAX,(intmax_t)num);
 	for(int x=0;x<7;x++){
 		memmove(buf+x*3,buf+7+x*2,2);
 		buf[x*3+2]='/';

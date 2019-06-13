@@ -1,3 +1,12 @@
+chunkfs (0.8) unstable; urgency=low
+
+  * Build-depend on perl for any arch to support cross building.
+  * Adapt writeoverlay.sh to changed losetup options.
+  * Use portable format specifiers for big integers.
+  * Update to debhelper compatibility level 9.
+
+ -- Florian Zumbiehl <florz@florz.de>  Thu, 13 Jun 2019 12:35:35 +0200
+
 chunkfs (0.7) unstable; urgency=low
 
   * Check that file descriptors 0 to 2 are open on startup.

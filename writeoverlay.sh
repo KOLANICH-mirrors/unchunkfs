@@ -52,7 +52,7 @@ case "$1" in
 		OVERLAYDEV=$5
 		COWFILE=`mktemp -t writeoverlay.XXXXXXXXXX`
 		dd if=/dev/zero bs=1 seek=`echo $COWSIZE-1 | bc` count=1 of=$COWFILE > /dev/null
-		LOOPDEV=`losetup -fs $COWFILE`
+		LOOPDEV=`losetup -f --show $COWFILE`
 		rm $COWFILE
 		echo "0 `blockdev --getsz $ORIGDEV` snapshot $ORIGDEV $LOOPDEV n $SECT_PER_CHUNK" | dmsetup create $OVERLAYDEV
 		;;

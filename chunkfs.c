@@ -28,6 +28,7 @@
 #include <stdio.h>
 #include <limits.h>
 #include <stdint.h>
+#include <inttypes.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <stdlib.h>
@@ -120,7 +121,7 @@ static int chunkfs_readdir(const char *path,void *buf,fuse_fill_dir_t filler,off
 	filler(buf,"..",NULL,0);
 	for(uint64_t x=0;x<256&&(uint64_t)st.chunk+x*chunks_per_entry<(uint64_t)image_chunks;x++){
 		char nbuf[3];
-		sprintf(nbuf,"%02llx",x);
+		sprintf(nbuf,"%02" PRIx64,x);
 		filler(buf,nbuf,NULL,0);
 	}
 	return 0;
