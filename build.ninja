@@ -1,0 +1,55 @@
+builddir = .
+
+prefix = /usr
+
+version = 0.8
+cflags = -std=c99 -DVERSION=\"$version\" -O2 -Wall
+ldlibs = -lfuse
+ldflags = -s
+
+rule pod2man
+ description = pod2man $out
+ command = pod2man -c "" -n CHUNKFS -r "ChunkFS 0.8" -s 1 $in | gzip > $out
+
+rule cc
+ description = compile $out
+ depfile = $out.d
+ command = cc $cflags -MD -MF $out.d -c -o $out $in
+
+rule link
+ command = cc $ldflags $in $ldlibs -o $out
+ description = linking $out
+
+build all: phony chunkfs unchunkfs chunkfs.1.gz
+
+build chunkfs.o: cc chunkfs.c
+build utils.o: cc utils.c
+build unchunkfs.o: cc unchunkfs.c
+
+build chunkfs: link chunkfs.o utils.o
+build unchunkfs: link unchunkfs.o utils.o
+
+build chunkfs.1.gz: pod2man manpage.pod
+
+rule install
+ description = install $in
+ command = install $in $destdir$prefix/bin/
+
+rule install_man1
+ description = install $in
+ command = install -m 644 $in $destdir$prefix/share/man/man1/
+
+build $destdir$prefix/bin/chunkfs: install chunkfs
+build $destdir$prefix/bin/unchunkfs: install unchunkfs
+build $destdir$prefix/share/doc/packages/chunkfs/examples/writeoverlay.sh: install writeoverlay.sh
+build $destdir$prefix/share/man/man1/chunkfs.1.gz: install_man1 chunkfs.1.gz
+
+rule symlink
+ description = symlink $in -> $out
+ command = ln -s $in $out
+
+build $destdir$prefix/share/man/man1/unchunkfs.1.gz: symlink $destdir$prefix/share/man/man1/chunkfs.1.gz
+
+build install: phony $destdir$prefix/bin/chunkfs $destdir$prefix/bin/unchunkfs $destdir$prefix/share/doc/packages/chunkfs/examples/writeoverlay.sh $destdir$prefix/share/man/man1/unchunkfs.1.gz $destdir$prefix/share/man/man1/chunkfs.1.gz
+
+default all
